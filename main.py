@@ -3,6 +3,9 @@ import requests
 import json
 from sklearn.cluster import KMeans
 import matplotlib.pyplot as plt
+from google.cloud import storage
+from google.auth.credentials import Credentials
+from google.oauth2 import service_account
 
 url = "https://status.cloud.google.com/summary"
 response = requests.get(url)
@@ -53,9 +56,17 @@ for incident in incidents:
             'description': incident_description
         })
 
-# with open('incident_report.json', 'w', encoding='utf-8') as f:
-#     json.dump(data, f, ensure_ascii=False, indent=4)
 
-with open('incidents.txt', 'w') as f:
-    for item in incident_list:
-        f.write("%s\n" % item)
+credentials = service_account.Credentials.from_service_account_file('credentials.json')
+
+client = storage.Client(project='keen-opus-383922', credentials=credentials)
+
+bucket_name = 'cloud-failure-analysis-app-bucket'
+
+blob = client.bucket(bucket_name).blob('incident_report.json')
+with open('incident_report.json', 'rb') as file:
+   blob.upload_from_file(file)
+
+with open('incident_report.json', 'wb') as file:
+   blob.download_to_file(file)
+
